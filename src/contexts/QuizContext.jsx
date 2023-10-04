@@ -1,3 +1,9 @@
+/* eslint-disable react-refresh/only-export-components */
+/* eslint-disable react/prop-types */
+
+import { createContext, useContext, useEffect, useReducer } from 'react';
+import { questions as quizQuestions } from '../data/questions.json';
+
 const SECS_PER_QUESTION = 30;
 
 const initialState = {
@@ -10,6 +16,8 @@ const initialState = {
   highscore: 0,
   secondsRemaining: null,
 };
+
+const QuizContext = createContext();
 
 const reducer = (state, action) => {
   switch (action.type) {
@@ -66,4 +74,58 @@ const reducer = (state, action) => {
   }
 };
 
-export { initialState, reducer };
+const QuizProvider = ({ children }) => {
+  const [
+    { questions, status, index, answer, points, highscore, secondsRemaining },
+    dispatch,
+  ] = useReducer(reducer, initialState);
+
+  const numQuestions = questions.length;
+  const maxPossiblePoints = questions.reduce(
+    (prev, cur) => prev + cur.points,
+    0
+  );
+
+  useEffect(() => {
+    // fetch('http://localhost:9000/questions')
+    //   .then((res) => res.json())
+    //   .then((data) => {
+    //     dispatch({ type: 'dataReceived', payload: data });
+    //   })
+    //   .catch(() => dispatch({ type: 'dataFailed' }));
+
+    dispatch({ type: 'dataReceived', payload: quizQuestions });
+  }, []);
+
+  return (
+    <QuizContext.Provider
+      value={{
+        questions,
+        status,
+        index,
+        answer,
+        points,
+        highscore,
+        secondsRemaining,
+        numQuestions,
+        maxPossiblePoints,
+
+        dispatch,
+      }}
+    >
+      {children}
+    </QuizContext.Provider>
+  );
+};
+
+const useQuiz = () => {
+  const context = useContext(QuizContext);
+
+  if (!context) {
+    throw new Error('QuizContext was used outside of the QuizProvider');
+  }
+
+  return context;
+};
+
+export { QuizProvider, useQuiz };
